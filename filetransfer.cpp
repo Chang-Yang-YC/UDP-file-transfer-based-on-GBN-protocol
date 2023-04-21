@@ -7,46 +7,16 @@ fileTransfer::fileTransfer(QWidget *parent)
 {
     ui->setupUi(this);
 
-    udpSocket = new QUdpSocket(this);
+    sendSocket = new QUdpSocket(this);
+    receiveSocket = new QUdpSocket(this);
     //绑定
-    udpSocket->bind(QHostAddress(ip),UDPPort);
-
-    uint8_t check;
-    QString test = "123456789";
-    QByteArray send = test.toLocal8Bit();
-    uint16_t ans = crc16_CCITT(send.data(),9);
-    qDebug() << send.size();
-    qDebug() << ans;
-    qDebug() << QString::number(ans, 16).rightJustified(sizeof(short)*2, '0');
+    sendSocket->bind(QHostAddress(sendip),sendUDPPort);
+    receiveSocket->bind(QHostAddress(thisip),thisUDPPort);
 
 
-    for(int i = 0;i < send.size();i++)
-    {
-        check = send[i]; //得到高位
-        qDebug() << i + 1 << ": " << QString::number(check, 2).rightJustified(8, '0');
-    }
-    uint8_t temp;
-    temp = ans >> 8;
-    qDebug() << QString::number(temp, 2).rightJustified(8, '0');
-    send.append(temp);
-    temp = ans & 0xff;
-    qDebug() << QString::number(temp, 2).rightJustified(8, '0');
-    send.append(temp);
+    connect(myPrefer,SIGNAL(send_Back_Param(QString)),this,SLOT(slotGetParam(QString)));
 
-//    uint8_t check;
-//    int len = send.size();
-//    qDebug() << send.toHex();
-//    check = send[2]; //得到高位
-//    qDebug() << QString::number(check, 2).rightJustified(8, '0');
-//    check = check << 8;//向左移8位。结果：0xcd00
-//    check = check | send[len - 1];//或上a[1]=0xe2;  即0xcde2
-//    qDebug() << QString::number(check, 2).rightJustified(8, '0');
-    for(int i = 0;i < send.size();i++)
-    {
-        check = send[i]; //得到高位
-        qDebug() << i + 1 << ": " << QString::number(check, 2).rightJustified(8, '0');
-    }
-    if(check_CCITT(send.data(),send.size()))   qDebug() << "yes";
+
 }
 
 fileTransfer::~fileTransfer()
@@ -54,3 +24,60 @@ fileTransfer::~fileTransfer()
     delete ui;
 }
 
+void fileTransfer::on_receiveSocket_readyRead()
+{
+    receiveBuffer.clear();
+    //准备ip 端口 存储空间
+    QHostAddress ClientAddr; //对方IP存储空间
+    uint16_t port;            //对方端口
+
+    //收报文与
+    long long len = receiveSocket->readDatagram(receiveBuffer.data(),dataSize + 50,&ClientAddr,&port);
+
+    //判断报文是否读取成功
+    if(len < 1) return; //读取失败
+    else
+    {
+        if(check_CCITT(receiveBuffer.data(),receiveBuffer.size()))
+        {
+            //此时正确性校验不通过
+            qDebug() << "crc check failed!";
+            return;
+        }
+        else
+        {
+            //将接收数据拆解为帧形式
+            receiveUDPFrame->getReceive(receiveBuffer.data(),receiveBuffer.size());
+
+        }
+    }
+}
+
+
+void fileTransfer::on_actionmenuPrefer_triggered()
+{
+    QString param;
+    param += thisip + "##";
+    param += QString("%1##").arg(thisUDPPort);
+    param += QString("%1##%2##%3##%4##%5##%6").arg(dataSize).arg(errRate).arg(lostRate).arg(swSize).arg(initSeqNo).arg(timeOut);
+    this->myPrefer->show_now_param(param);
+    this->myPrefer->setWindowTitle("首选项");
+    this->myPrefer->exec();
+}
+
+void fileTransfer::slotGetParam(QString param)
+{
+    qDebug() << param;
+    QString shows = "设置参数: " + param;
+    statusLabel->setText(shows);
+    ui->statusbar->addWidget(statusLabel);
+    thisip = param.section("##",0,0);
+    thisUDPPort = param.section("##",1,1).toInt();
+    dataSize = param.section("##",2,2).toInt();
+    errRate = param.section("##",3,3).toInt();
+    lostRate = param.section("##",4,4).toInt();
+    swSize = param.section("##",5,5).toInt();
+    initSeqNo = param.section("##",6,6).toInt();
+    timeOut = param.section("##",7,7).toInt();
+    receiveSocket->bind(QHostAddress(thisip),thisUDPPort);
+}

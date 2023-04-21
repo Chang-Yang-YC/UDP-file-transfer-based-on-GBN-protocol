@@ -12,15 +12,18 @@ SOURCES += \
     crc_verify.cpp \
     main.cpp \
     filetransfer.cpp \
+    preferencedialog.cpp \
     udpframe.cpp
 
 HEADERS += \
     crc_verify.h \
     filetransfer.h \
+    preferencedialog.h \
     udpframe.h
 
 FORMS += \
-    filetransfer.ui
+    filetransfer.ui \
+    preferencedialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
