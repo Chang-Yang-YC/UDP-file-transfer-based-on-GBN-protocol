@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QTableWidget>
 #include "crc_verify.h"
 #include "udpframe.h"
 #include "preferencedialog.h"
@@ -37,8 +38,8 @@ public:
     UDPFrame* sendUDPFrame;     //发送的UDP帧存储
     UDPFrame* receiveUDPFrame;  //收到的UDP帧存储
     int dataSize = 1024;        //数据字段长度
-    int errRate = 10;           //数据出错率：每errRate个包出错一个
-    int lostRate = 10;          //数据丢失率：每lostRate个包丢失一个
+    int errRate = 50;           //数据出错率：每errRate个包出错一个
+    int lostRate = 50;          //数据丢失率：每lostRate个包丢失一个
     int swSize = 4;             //滑动窗口大小
     int initSeqNo = 1;          //起始PDU序号
     int timeOut = 1000;         //超时定时器时长
@@ -72,6 +73,18 @@ public:
     long long receivedSize;
     long long expectReceive = -1;         //发送完文件需要多少帧
 
+    QTime* myTime;
+    QTableWidgetItem* tableItemSending;
+    QTableWidgetItem* tableItemACK;
+    QTableWidgetItem* tableItemUnaccept;
+    QTableWidgetItem* tableItemNodata;
+
+    //table1相关
+    QTableWidget* table1;
+    int row = 0;
+    int ackrow = 0;
+
+
     QByteArray debugarray;
     QLabel* statusLabel = new QLabel();         //状态栏信息
 
@@ -84,6 +97,9 @@ public:
     void timerSend_triggered();
     void analyseReceive();
     void timeOutCheck();
+
+    bool isFrameMistake();  //人为引入帧出错
+    bool isFrameLost();     //人为引入帧丢失
 
 private slots:
     void on_actionmenuPrefer_triggered();

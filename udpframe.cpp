@@ -12,6 +12,7 @@ UDPFrame::UDPFrame()
     next_frame_to_send = 0;
     frame_expected = 0;
     ack_expected = 0;
+    crc = 0;
 }
 
 //UDPFrame::UDPFrame(char *data, int len)
@@ -40,7 +41,7 @@ void UDPFrame::framing()
     //for(int i = 0;i < nbuffered;i++)    arrSend.append(buffer[i]);
     arrSend.append(buffer);
     uint8_t temp;
-    uint16_t crc = crc16_CCITT(arrSend.data(),arrSend.size());
+    crc = crc16_CCITT(arrSend.data(),arrSend.size());
     temp = crc >> 8;
     arrSend.append(temp);
     temp = crc & 0xff;
@@ -109,6 +110,7 @@ void UDPFrame::setBuffer(QByteArray arr)
 
 void UDPFrame::init()
 {
+    crc = 0;
     setHead(0,0,0);
     buffer.clear();
 }

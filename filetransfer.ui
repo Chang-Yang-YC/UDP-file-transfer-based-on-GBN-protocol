@@ -83,7 +83,7 @@
        <rect>
         <x>10</x>
         <y>480</y>
-        <width>93</width>
+        <width>81</width>
         <height>28</height>
        </rect>
       </property>
@@ -94,9 +94,9 @@
      <widget class="QLineEdit" name="lineEditFilepath">
       <property name="geometry">
        <rect>
-        <x>120</x>
+        <x>100</x>
         <y>480</y>
-        <width>441</width>
+        <width>421</width>
         <height>31</height>
        </rect>
       </property>
@@ -107,9 +107,9 @@
      <widget class="QPushButton" name="pushButton1SaveLog">
       <property name="geometry">
        <rect>
-        <x>580</x>
+        <x>530</x>
         <y>480</y>
-        <width>93</width>
+        <width>81</width>
         <height>28</height>
        </rect>
       </property>
@@ -120,9 +120,9 @@
      <widget class="QPushButton" name="pushButton1Send">
       <property name="geometry">
        <rect>
-        <x>690</x>
+        <x>712</x>
         <y>480</y>
-        <width>93</width>
+        <width>81</width>
         <height>28</height>
        </rect>
       </property>
@@ -135,32 +135,22 @@
        <rect>
         <x>10</x>
         <y>110</y>
-        <width>81</width>
-        <height>71</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QTextEdit" name="textEdit">
-      <property name="geometry">
-       <rect>
-        <x>110</x>
-        <y>120</y>
-        <width>651</width>
-        <height>321</height>
+        <width>771</width>
+        <height>361</height>
        </rect>
       </property>
      </widget>
      <widget class="QPushButton" name="pushButton">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>250</y>
-        <width>93</width>
+        <x>620</x>
+        <y>480</y>
+        <width>81</width>
         <height>28</height>
        </rect>
       </property>
       <property name="text">
-       <string>stop</string>
+       <string>停止发送</string>
       </property>
      </widget>
     </widget>

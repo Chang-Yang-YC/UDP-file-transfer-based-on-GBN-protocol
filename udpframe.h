@@ -14,6 +14,7 @@ public:
 //    char* buffer;           //帧数据字段
 //    int nbuffered;          //帧数据字段所占空间
     QByteArray buffer;
+    uint16_t crc;           //校验码
     int totalLen;           //总长
     QByteArray arrSend;     //最终发送的
 
