@@ -74,15 +74,26 @@ public:
     long long expectReceive = -1;         //发送完文件需要多少帧
 
     QTime* myTime;
+
+    //table1相关
     QTableWidgetItem* tableItemSending;
     QTableWidgetItem* tableItemACK;
     QTableWidgetItem* tableItemUnaccept;
     QTableWidgetItem* tableItemNodata;
-
-    //table1相关
     QTableWidget* table1;
     int row = 0;
     int ackrow = 0;
+
+    //table2相关
+    QTableWidget* table2;
+    int rowReceive = 0;
+    QTableWidgetItem* tableItemTypeACK;
+    QTableWidgetItem* tableItemTypeData;
+    QTableWidgetItem* tableItemCheckOK;
+    QTableWidgetItem* tableItemCheckDataErr;
+    QTableWidgetItem* tableItemCheckNoErr;
+
+
 
 
     QByteArray debugarray;

@@ -18,6 +18,7 @@ fileTransfer::fileTransfer(QWidget *parent)
     receiveUDPFrame = new UDPFrame();
 
     myTime = new QTime();
+    //初始化表格1
     tableItemSending = new QTableWidgetItem();
     tableItemSending->setText("已发送");
     tableItemSending->setBackgroundColor(Qt::yellow);
@@ -30,7 +31,6 @@ fileTransfer::fileTransfer(QWidget *parent)
     tableItemNodata = new QTableWidgetItem();
     tableItemNodata->setText("无数据");
     tableItemNodata->setBackgroundColor(Qt::gray);
-    //初始化表格
     table1 = ui->tableWidget1;
     table1->scrollToBottom();
     table1->setColumnCount(5);
@@ -39,6 +39,22 @@ fileTransfer::fileTransfer(QWidget *parent)
     table1List << tr("帧序号") << tr("时间戳") << tr("状态") << tr("帧校验") << tr("已发送");
     table1->setHorizontalHeaderLabels(table1List);
     table1->setEditTriggers(QAbstractItemView::NoEditTriggers);   //表格不可编辑
+
+    //初始化表格2
+    tableItemTypeACK = new QTableWidgetItem();
+    tableItemTypeACK->setText("确认帧");
+    tableItemTypeACK->setBackgroundColor(Qt::cyan);
+    tableItemTypeData = new QTableWidgetItem();
+    tableItemTypeData->setText("数据帧");
+    tableItemTypeData->setBackgroundColor(Qt::magenta);
+
+    table2 = ui->tableWidget2;
+    table1->setColumnCount(4);
+    table1->setRowCount(1);
+    QStringList table2List;
+    table2List << tr("帧序号") << tr("时间戳") << tr("校验") << tr("帧类型");
+    table2->setHorizontalHeaderLabels(table2List);
+    table2->setEditTriggers(QAbstractItemView::NoEditTriggers);   //表格不可编辑
 
     connect(myPrefer,SIGNAL(send_Back_Param(QString)),this,SLOT(slotGetParam(QString)));
     connect(&timerSend,&QTimer::timeout,[=](){timerSend_triggered();});

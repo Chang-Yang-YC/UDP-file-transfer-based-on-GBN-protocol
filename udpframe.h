@@ -13,7 +13,7 @@ public:
     int ack_expected;       //确认帧号，返回此时最近确认的帧(捎带)
 //    char* buffer;           //帧数据字段
 //    int nbuffered;          //帧数据字段所占空间
-    QByteArray buffer;
+    QByteArray buffer;      //保存发送数据的结构
     uint16_t crc;           //校验码
     int totalLen;           //总长
     QByteArray arrSend;     //最终发送的
