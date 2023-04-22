@@ -1,0 +1,2 @@
+thisip ## thisport ## datatSize ## errRate ## lostRate ## swSize ## initSeqNo ## timeout ## sendip ## sendUDP$$
+127.0.0.1##42020##1024##10##10##4##1##1000##127.0.0.1##43108

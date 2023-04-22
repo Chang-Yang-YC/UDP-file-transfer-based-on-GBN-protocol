@@ -15,7 +15,7 @@ class preferenceDialog : public QDialog
 
 public:
     QString thisip;             //本地ip地址
-    int thisUDPPort;       //本地端口号
+    QString thisUDPPort;       //本地端口号
     int dataSize = 1024;        //数据字段长度
     int errRate = 10;           //数据出错率：每errRate个包出错一个
     int lostRate = 10;          //数据丢失率：每lostRate个包丢失一个

@@ -13,7 +13,215 @@
   <property name="windowTitle">
    <string>fileTransfer</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>801</width>
+      <height>541</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tabSend">
+     <attribute name="title">
+      <string>文件发送</string>
+     </attribute>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>20</y>
+        <width>731</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="labelIP">
+           <property name="text">
+            <string>目的IP：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEditIP">
+           <property name="text">
+            <string>127.0.0.1</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="labelPort">
+           <property name="text">
+            <string>目的端口：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEditPort">
+           <property name="text">
+            <string>42020</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QPushButton" name="pushButton1OpenFile">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>480</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>打开文件</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEditFilepath">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>480</y>
+        <width>441</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton1SaveLog">
+      <property name="geometry">
+       <rect>
+        <x>580</x>
+        <y>480</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>导出日志</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton1Send">
+      <property name="geometry">
+       <rect>
+        <x>690</x>
+        <y>480</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>发送文件</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget1">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>81</width>
+        <height>71</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QTextEdit" name="textEdit">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>120</y>
+        <width>651</width>
+        <height>321</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>250</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>stop</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tabReceive">
+     <attribute name="title">
+      <string>文件接收</string>
+     </attribute>
+     <widget class="QTableWidget" name="tableWidget2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>771</width>
+        <height>461</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton2SaveLog">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>480</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>导出日志</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tabLog">
+     <attribute name="title">
+      <string>日志分析</string>
+     </attribute>
+     <widget class="QTableWidget" name="tableWidget3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>781</width>
+        <height>461</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton3LoadLog">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>480</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>加载日志</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -28,6 +236,7 @@
      <string>文件</string>
     </property>
     <addaction name="actionmenuPrefer"/>
+    <addaction name="actionLoadParam"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -35,6 +244,11 @@
   <action name="actionmenuPrefer">
    <property name="text">
     <string>首选项</string>
+   </property>
+  </action>
+  <action name="actionLoadParam">
+   <property name="text">
+    <string>导入参数</string>
    </property>
   </action>
  </widget>

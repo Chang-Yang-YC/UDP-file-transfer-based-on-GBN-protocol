@@ -8,6 +8,9 @@
 #include <QtGlobal>
 #include <QDebug>
 #include <QLabel>
+#include <QFile>
+#include <QFileDialog>
+#include <QFileInfo>
 #include "crc_verify.h"
 #include "udpframe.h"
 #include "preferencedialog.h"
@@ -24,11 +27,11 @@ public:
     QUdpSocket *sendSocket;     //udp发送接口
     QUdpSocket *receiveSocket;   //udp接收接口
     QTimer timerSend;           //发送定时器
-    QTimer timerReceive;        //接收定时器
+    QTimer timerTimeOut;        //超时定时器
     QString thisip = "127.0.0.1";   //本地ip地址
-    int thisUDPPort = 43108;   //本地端口号
+    quint16 thisUDPPort = 43108;   //本地端口号
     QString sendip = "127.0.0.1";   //目标ip地址
-    int sendUDPPort = 42020;   //目标端口号
+    quint16 sendUDPPort = 42020;   //目标端口号
     UDPFrame* sendUDPFrame;     //发送的UDP帧存储
     UDPFrame* receiveUDPFrame;  //收到的UDP帧存储
     int dataSize = 1024;        //数据字段长度
@@ -38,6 +41,34 @@ public:
     int initSeqNo = 1;          //起始PDU序号
     int timeOut = 1000;         //超时定时器时长
     QByteArray receiveBuffer;   //文件接收缓冲区
+    char** sendBuf;             //发送缓冲区
+    long long* buftoNo;       //sendBuf中对应的帧序号
+    int* buflen;                 //sendBuf对应长度
+    bool isSending = 0;         //记录此刻是不是在发文件
+    bool isReceiveing = 0;      //记录此刻是不是在收文件
+    int noAnsCount;             //记录连续有多少起无回应，超过十次认为信道失效
+    int timeOutCount;           //记录连续多少次重发，连续8次则认为信道失效
+
+    long long frameNo  = -1;    //当前发送帧序号
+    long long ackfraNo = -1;    //已确认的帧号    !!!发送者维护
+    long long recefraNo = -1;   //当前接收帧序号  !!!接收者维护
+    long long TimerackNo = -2;       // ！！！超时计时器维护  记录上次确认的帧
+
+    //发送文件相关
+    QFile file;       //文件对象
+    QString fileName; //文件名字
+    long long fileSize; //文件大小
+    long long sendSize; //已经发送文件的大小
+    long long expectNo = -1;         //发送完文件需要多少帧
+
+    //接收文件相关
+    QFile receiveFile;
+    QString receiveFileName;
+    long long receiveFileSize;
+    long long receivedSize;
+    long long expectReceive = -1;         //发送完文件需要多少帧
+
+    QByteArray debugarray;
     QLabel* statusLabel = new QLabel();         //状态栏信息
 
     preferenceDialog *myPrefer = new preferenceDialog(this);
@@ -46,10 +77,27 @@ public:
     ~fileTransfer();
 
     void on_receiveSocket_readyRead();
+    void timerSend_triggered();
+    void analyseReceive();
+    void timeOutCheck();
 
 private slots:
     void on_actionmenuPrefer_triggered();
     void slotGetParam(QString param);
+
+    void on_pushButton1OpenFile_clicked();
+
+    void on_pushButton1SaveLog_clicked();
+
+    void on_pushButton1Send_clicked();
+
+    void on_pushButton2SaveLog_clicked();
+
+    void on_pushButton3LoadLog_clicked();
+
+    void on_actionLoadParam_triggered();
+
+    void on_pushButton_clicked();
 
 private:
     Ui::fileTransfer *ui;

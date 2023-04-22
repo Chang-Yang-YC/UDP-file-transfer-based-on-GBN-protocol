@@ -62,6 +62,7 @@ bool check_CCITT(char *data, uint8_t len)
     temp1 = temp1 ^ data[len - 2];
     temp2 = temp2 ^ data[len - 1];
     if(temp1 == 0 && temp2 == 0)
+        return false;
+    else
         return true;
-    return false;
 }

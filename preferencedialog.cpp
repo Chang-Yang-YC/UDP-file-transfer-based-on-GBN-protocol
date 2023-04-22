@@ -25,7 +25,7 @@ preferenceDialog::~preferenceDialog()
 void preferenceDialog::show_now_param(QString msg)
 {
     thisip = msg.section("##",0,0);
-    thisUDPPort = msg.section("##",1,1).toInt();
+    thisUDPPort = msg.section("##",1,1);
     dataSize = msg.section("##",2,2).toInt();
     errRate = msg.section("##",3,3).toInt();
     lostRate = msg.section("##",4,4).toInt();
@@ -39,7 +39,7 @@ void preferenceDialog::show_now_param(QString msg)
 void preferenceDialog::displayParam()
 {
     ui->lineEditIP->setText(thisip);
-    ui->lineEditPort->setText(QString::number(thisUDPPort));
+    ui->lineEditPort->setText(thisUDPPort);
     ui->lineEditDataSize->setText(QString::number(dataSize));
     ui->lineEditErRate->setText(QString::number(errRate));
     ui->lineEditLostRate->setText(QString::number(lostRate));
@@ -51,7 +51,7 @@ void preferenceDialog::displayParam()
 void preferenceDialog::getParam()
 {
     thisip = ui->lineEditIP->text();
-    thisUDPPort = ui->lineEditPort->text().toInt();
+    thisUDPPort = ui->lineEditPort->text();
     dataSize = ui->lineEditDataSize->text().toInt();
     errRate = ui->lineEditErRate->text().toInt();
     lostRate = ui->lineEditLostRate->text().toInt();
@@ -65,7 +65,7 @@ void preferenceDialog::on_buttonBox_accepted()
     getParam();
     QString param;
     param += thisip + "##";
-    param += QString("%1##").arg(thisUDPPort);
+    param += thisUDPPort + "##";
     param += QString("%1##%2##%3##%4##%5##%6").arg(dataSize).arg(errRate).arg(lostRate).arg(swSize).arg(initSeqNo).arg(timeOut);
     emit send_Back_Param(param);
 }
