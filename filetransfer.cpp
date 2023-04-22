@@ -28,31 +28,41 @@ fileTransfer::fileTransfer(QWidget *parent)
     tableItemUnaccept = new QTableWidgetItem();
     tableItemUnaccept->setText("未接受");
     tableItemUnaccept->setBackgroundColor(Qt::red);
-    tableItemNodata = new QTableWidgetItem();
-    tableItemNodata->setText("无数据");
-    tableItemNodata->setBackgroundColor(Qt::gray);
+    tableItemTypeACK = new QTableWidgetItem();
+    tableItemTypeACK->setText("无数据帧");
+    tableItemTypeACK->setBackgroundColor(Qt::gray);
     table1 = ui->tableWidget1;
     table1->scrollToBottom();
-    table1->setColumnCount(5);
+    table1->setColumnCount(7);
     table1->setRowCount(1);
     QStringList table1List;
-    table1List << tr("帧序号") << tr("时间戳") << tr("状态") << tr("帧校验") << tr("已发送");
+    table1List << tr("帧序号") << tr("时间戳") << tr("帧类型") << tr("状态") << tr("确认帧") << tr("帧校验") << tr("已发送");
     table1->setHorizontalHeaderLabels(table1List);
     table1->setEditTriggers(QAbstractItemView::NoEditTriggers);   //表格不可编辑
 
     //初始化表格2
-    tableItemTypeACK = new QTableWidgetItem();
-    tableItemTypeACK->setText("确认帧");
-    tableItemTypeACK->setBackgroundColor(Qt::cyan);
+    tableItemTypeBoth = new QTableWidgetItem();
+    tableItemTypeBoth->setText("复合帧");
+    tableItemTypeBoth->setBackgroundColor(Qt::cyan);
     tableItemTypeData = new QTableWidgetItem();
     tableItemTypeData->setText("数据帧");
     tableItemTypeData->setBackgroundColor(Qt::magenta);
+    tableItemCheckOK = new QTableWidgetItem();
+    tableItemCheckOK->setText("有效帧");
+    tableItemCheckOK->setBackgroundColor(Qt::green);
+    tableItemCheckDataErr = new QTableWidgetItem();
+    tableItemCheckDataErr->setText("数据错误");
+    tableItemCheckDataErr->setBackgroundColor(Qt::red);
+    tableItemCheckNoErr = new QTableWidgetItem();
+    tableItemCheckNoErr->setText("帧序错误");
+    tableItemCheckNoErr->setBackgroundColor(Qt::yellow);
+
 
     table2 = ui->tableWidget2;
-    table1->setColumnCount(4);
-    table1->setRowCount(1);
+    table2->setColumnCount(6);
+    table2->setRowCount(1);
     QStringList table2List;
-    table2List << tr("帧序号") << tr("时间戳") << tr("校验") << tr("帧类型");
+    table2List << tr("帧序号") << tr("时间戳") << tr("帧类型") << tr("校验") << tr("ack帧") << tr("已接收");
     table2->setHorizontalHeaderLabels(table2List);
     table2->setEditTriggers(QAbstractItemView::NoEditTriggers);   //表格不可编辑
 
@@ -90,6 +100,15 @@ void fileTransfer::on_receiveSocket_readyRead()
         {
             //此时正确性校验不通过
             //qDebug() << "crc check failed!";
+            table2->setItem(rowReceive,0,new QTableWidgetItem("NULL")); //帧序号
+            table2->setItem(rowReceive,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+            table2->setItem(rowReceive,2,new QTableWidgetItem("NULL")); //类型
+            table2->setItem(rowReceive,3,tableItemCheckDataErr->clone()); //校验
+            table2->setItem(rowReceive,4,new QTableWidgetItem("NULL")); //ack
+            table2->setItem(rowReceive,5,new QTableWidgetItem("NULL")); //接收量
+            rowReceive++;
+            table2->insertRow(rowReceive);
+            table2->scrollToBottom();
             return;
         }
         else
@@ -168,6 +187,7 @@ void fileTransfer::analyseReceive()
             receiveSocket->disconnectFromHost();
             receiveSocket->bind(QHostAddress(thisip),thisUDPPort);
             isReceiveing = false;
+
             statusLabel->setText("文件接收完成");
             ui->statusbar->addWidget(statusLabel);
         }
@@ -176,20 +196,45 @@ void fileTransfer::analyseReceive()
     {
         for(int i = ackfraNo;i < receiveUDPFrame->ack_expected;i++)
         {
-            table1->setItem(ackrow,2,tableItemACK->clone()); //状态
+            table1->setItem(ackrow,3,tableItemACK->clone()); //状态
+
             ackrow++;
         }
         ackfraNo = receiveUDPFrame->ack_expected;
     }
 
-//    ui->textEdit->append(QString("expect fra no = %1").arg(recefraNo));
-//    ui->textEdit->append(QString("real   fra no = %1").arg(receiveUDPFrame->frame_expected));
-//    ui->textEdit->append(QString("receive ack   = %1").arg(receiveUDPFrame->ack_expected));
-
-//    debugarray = receiveUDPFrame->arrSend;
-//    ui->textEdit->append(debugarray);
-//    ui->textEdit->append("****************************");
-//    ui->textEdit->append(" ");
+    if(isReceiveing && isSending)  //在接受数据
+    {
+        table2->setItem(rowReceive,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table2->setItem(rowReceive,0,new QTableWidgetItem(QString::number(receiveUDPFrame->frame_expected))); //帧序号
+        table2->setItem(rowReceive,2,tableItemTypeBoth->clone());
+        if(receiveUDPFrame->frame_expected == recefraNo)    table2->setItem(rowReceive,3,tableItemCheckOK->clone());
+        else    table2->setItem(rowReceive,3,tableItemCheckNoErr->clone());
+        table2->setItem(rowReceive,4,new QTableWidgetItem(QString::number(receiveUDPFrame->ack_expected))); //ack
+        table2->setItem(rowReceive,5,new QTableWidgetItem(QString("%1/%2").arg(receivedSize).arg(receiveFileSize))); //已发送大小
+    }
+    else if(isReceiveing)
+    {
+        table2->setItem(rowReceive,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table2->setItem(rowReceive,0,new QTableWidgetItem(QString::number(receiveUDPFrame->frame_expected))); //帧序号
+        table2->setItem(rowReceive,2,tableItemTypeData->clone());
+        if(receiveUDPFrame->frame_expected == recefraNo)    table2->setItem(rowReceive,3,tableItemCheckOK->clone());
+        else    table2->setItem(rowReceive,3,tableItemCheckNoErr->clone());
+        table2->setItem(rowReceive,4,new QTableWidgetItem("NULL")); //ack
+        table2->setItem(rowReceive,5,new QTableWidgetItem(QString("%1/%2").arg(receivedSize).arg(receiveFileSize))); //已发送大小
+    }
+    else if(isSending)
+    {
+        table2->setItem(rowReceive,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table2->setItem(rowReceive,0,new QTableWidgetItem("NULL")); //帧序号
+        table2->setItem(rowReceive,2,tableItemTypeACK->clone());
+        table2->setItem(rowReceive,3,tableItemCheckOK->clone());
+        table2->setItem(rowReceive,4,new QTableWidgetItem(QString::number(receiveUDPFrame->ack_expected))); //ack
+        table2->setItem(rowReceive,5,new QTableWidgetItem("NULL")); //已发送大小
+    }
+    rowReceive++;
+    table2->insertRow(rowReceive);
+    table2->scrollToBottom();
 }
 
 void fileTransfer::on_pushButton1Send_clicked()
@@ -206,34 +251,36 @@ void fileTransfer::on_pushButton1Send_clicked()
     sendUDPFrame->framing();
     sendSocket->writeDatagram(sendUDPFrame->arrSend.data(),sendUDPFrame->totalLen,QHostAddress(sendip),sendUDPPort);
 
-
-    table1->setItem(row,0,new QTableWidgetItem("0")); //帧序号
-    table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
-    table1->setItem(row,2,tableItemSending->clone()); //状态
-    table1->setItem(row,3,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
-    table1->setItem(row,4,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
-    row++;
-    ui->tableWidget1->insertRow(row);
-
     QTime delay = QTime::currentTime().addMSecs(20);
     while(QTime::currentTime()<delay)
     {
         QCoreApplication::processEvents(QEventLoop::AllEvents,5);
         QThread::msleep(5);
     }
+    isSending = true;
 
-//    ui->textEdit->append("****** after sending ********");
-//    ui->textEdit->append("last send  No = " + QString::number(frameNo));
-//    ui->textEdit->append("last      ack = " + QString::number(ackfraNo));
-//    debugarray = QString("real send  No = %1").arg(receiveUDPFrame->frame_expected).toLocal8Bit();
-//    ui->textEdit->append(debugarray);
-//    debugarray = QString("real send ack = %1").arg(receiveUDPFrame->ack_expected).toLocal8Bit();
-//    ui->textEdit->append(debugarray);
-//    debugarray = sendUDPFrame->arrSend;
-//    ui->textEdit->append(debugarray);
-//    ui->textEdit->append("****************************");
-//    ui->textEdit->append(" ");
-
+    table1->setItem(row,0,new QTableWidgetItem("0")); //帧序号
+    table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+    if(isSending && isReceiveing)
+    {
+        table1->setItem(row,2,tableItemTypeBoth->clone()); //类型
+        table1->setItem(row,4,new QTableWidgetItem(QString::number(sendUDPFrame->ack_expected))); //ack帧
+    }
+    else if(isSending)
+    {
+        table1->setItem(row,2,tableItemTypeData->clone()); //类型
+        table1->setItem(row,4,new QTableWidgetItem("NULL")); //ack帧
+    }
+    else if(isReceiveing)
+    {
+        table1->setItem(row,2,tableItemTypeACK->clone()); //类型
+        table1->setItem(row,4,new QTableWidgetItem(QString::number(sendUDPFrame->ack_expected))); //ack帧
+    }
+    table1->setItem(row,3,tableItemSending->clone()); //状态
+    table1->setItem(row,5,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
+    table1->setItem(row,6,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
+    row++;
+    ui->tableWidget1->insertRow(row);
     //激活超时计时器和发送定时器
     if(timerTimeOut.isActive() == false)    timerTimeOut.start(timeOut);
     if(timerSend.isActive() == false)       timerSend.start(20);
@@ -246,7 +293,6 @@ void fileTransfer::on_pushButton1Send_clicked()
     buftoNo = (long long*)malloc(swSize*sizeof(long long));
     buflen = (int*)malloc(swSize*sizeof(int));
     loadBuf.resize(dataSize);
-    isSending = true;
     sendSize = 0;
 }
 
@@ -267,7 +313,7 @@ void fileTransfer::timerSend_triggered()
         isSending = false;
         while(ackrow < row)
         {
-            table1->setItem(ackrow,2,tableItemACK->clone()); //状态
+            table1->setItem(ackrow,3,tableItemACK->clone()); //状态
             ackrow++;
         }
     }
@@ -303,22 +349,44 @@ void fileTransfer::timerSend_triggered()
     //发送数据
     sendUDPFrame->framing();
 
-    if(sendUDPFrame->frame_expected == -1)
+    if(isSending && isReceiveing)
     {
-        table1->setItem(row,0,new QTableWidgetItem("NULL")); //帧序号
-        table1->setItem(row,2,tableItemNodata->clone()); //状态
-        if(!isSending)  table1->setItem(row,4,new QTableWidgetItem("NULL")); //已发送大小
-        else    table1->setItem(row,4,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
-    }
-    else
-    {
+        table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table1->setItem(row,3,tableItemSending->clone()); //状态
+        table1->setItem(row,5,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
         table1->setItem(row,0,new QTableWidgetItem(QString::number(sendUDPFrame->frame_expected))); //帧序号
-        table1->setItem(row,2,tableItemSending->clone()); //状态
-        table1->setItem(row,4,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
+        table1->setItem(row,2,tableItemTypeBoth->clone()); //类型
+        table1->setItem(row,4,new QTableWidgetItem(QString::number(sendUDPFrame->ack_expected))); //ack帧
+        table1->setItem(row,6,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
     }
-
-    table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
-    table1->setItem(row,3,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
+    else if(isSending)
+    {
+        table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table1->setItem(row,3,tableItemSending->clone()); //状态
+        table1->setItem(row,5,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
+        if(sendUDPFrame->frame_expected == -1)
+        {
+            table1->setItem(row,0,new QTableWidgetItem("NULL")); //帧序号
+            table1->setItem(row,2,tableItemTypeACK->clone()); //类型
+        }
+        else
+        {
+            table1->setItem(row,0,new QTableWidgetItem(QString::number(sendUDPFrame->frame_expected))); //帧序号
+            table1->setItem(row,2,tableItemTypeData->clone()); //类型
+        }
+        table1->setItem(row,4,new QTableWidgetItem("NULL")); //ack帧
+        table1->setItem(row,6,new QTableWidgetItem(QString("%1/%2").arg(sendSize).arg(fileSize))); //已发送大小
+    }
+    else if(isReceiveing)
+    {
+        table1->setItem(row,1,new QTableWidgetItem(myTime->currentTime().toString("hh:mm:ss.zzz"))); //时间戳
+        table1->setItem(row,3,tableItemSending->clone()); //状态
+        table1->setItem(row,5,new QTableWidgetItem(QString::number(sendUDPFrame->crc,16))); //crc校验
+        table1->setItem(row,0,new QTableWidgetItem("NULL")); //帧序号
+        table1->setItem(row,2,tableItemTypeACK->clone()); //类型
+        table1->setItem(row,4,new QTableWidgetItem(QString::number(sendUDPFrame->ack_expected))); //ack帧
+        table1->setItem(row,6,new QTableWidgetItem("NULL")); //
+    }
     row++;
     table1->insertRow(row);
     table1->scrollToBottom();
@@ -340,7 +408,7 @@ void fileTransfer::timeOutCheck()
     {
         while(ackrow < row)
         {
-            table1->setItem(ackrow,2,tableItemUnaccept->clone()); //状态
+            table1->setItem(ackrow,3,tableItemUnaccept->clone()); //状态
             ackrow++;
         }
         timeOutCount++;

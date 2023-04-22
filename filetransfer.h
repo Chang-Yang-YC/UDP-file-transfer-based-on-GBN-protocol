@@ -76,10 +76,6 @@ public:
     QTime* myTime;
 
     //table1相关
-    QTableWidgetItem* tableItemSending;
-    QTableWidgetItem* tableItemACK;
-    QTableWidgetItem* tableItemUnaccept;
-    QTableWidgetItem* tableItemNodata;
     QTableWidget* table1;
     int row = 0;
     int ackrow = 0;
@@ -87,12 +83,20 @@ public:
     //table2相关
     QTableWidget* table2;
     int rowReceive = 0;
+
+    //tableItem
+    //类型
     QTableWidgetItem* tableItemTypeACK;
     QTableWidgetItem* tableItemTypeData;
+    QTableWidgetItem* tableItemTypeBoth;
+    //校验
     QTableWidgetItem* tableItemCheckOK;
     QTableWidgetItem* tableItemCheckDataErr;
     QTableWidgetItem* tableItemCheckNoErr;
-
+    //状态
+    QTableWidgetItem* tableItemSending;
+    QTableWidgetItem* tableItemACK;
+    QTableWidgetItem* tableItemUnaccept;
 
 
 
