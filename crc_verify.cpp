@@ -35,7 +35,7 @@ const uint16_t crc16_table_CCITT [256]={
         0x7BC7,0x6A4E,0x58D5,0x495C,0x3DE3,0x2C6A,0x1EF1,0x0F78
 };
 
-uint16_t crc16_CCITT(uint8_t* datas,uint8_t len){
+uint16_t crc16_CCITT(uint8_t* datas,uint16_t len){
     uint16_t crc_value = 0;
     while (len--){
         crc_value = (crc_value >> 8) ^ crc16_table_CCITT[(crc_value ^ *datas++) & 0xff];
@@ -43,7 +43,7 @@ uint16_t crc16_CCITT(uint8_t* datas,uint8_t len){
     return crc_value;
 }
 
-uint16_t crc16_CCITT(char *data, uint8_t len)
+uint16_t crc16_CCITT(char *data, uint16_t len)
 {
     uint8_t* datas = reinterpret_cast<unsigned char*>(data);
     uint16_t crc_value = 0;
@@ -53,14 +53,14 @@ uint16_t crc16_CCITT(char *data, uint8_t len)
     return crc_value;
 }
 
-bool check_CCITT(char *data, uint8_t len)
+bool check_CCITT(char *data, uint16_t len)
 {
     uint16_t result = crc16_CCITT(data, len - 2);
     uint8_t temp1, temp2;
     temp1 = result >> 8;
     temp2 = result & 0xff;
-    temp1 = temp1 ^ data[len - 2];
-    temp2 = temp2 ^ data[len - 1];
+    temp1 = temp1 ^ (data[len - 2] & 0xff);
+    temp2 = temp2 ^ (data[len - 1] & 0xff);
     if(temp1 == 0 && temp2 == 0)
         return false;
     else

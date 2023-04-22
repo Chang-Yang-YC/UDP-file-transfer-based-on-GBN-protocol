@@ -33,6 +33,7 @@ UDPFrame::UDPFrame()
 void UDPFrame::framing()
 {
     arrSend.clear();
+    arrSend.resize(buffer.size()+50);
     QString head = QString("%1##%2##%3##").arg(next_frame_to_send).arg(frame_expected).arg(ack_expected);
     arrSend = head.toLocal8Bit();
     for(int i = arrSend.size();i < 25;i++)   arrSend.append('$');
@@ -60,6 +61,7 @@ void UDPFrame::getReceive(QByteArray arr)
     next_frame_to_send = QString(head).section("##", 0, 0).toInt();
     frame_expected = QString(head).section("##", 1, 1).toInt();
     ack_expected = QString(head).section("##", 2, 2).toInt();
+    totalLen = arr.size() - 27;
     for(int i = 25;i < arr.size() - 2;i++)
     {
         buffer[i-25] = arr[i];
@@ -90,6 +92,7 @@ void UDPFrame::setHead(int fnex, int fexp, int fack)
 
 void UDPFrame::setBuffer(QByteArray arr)
 {
+    buffer.resize(arr.size());
     for(int i = 0;i <arr.size();i++)
     {
         buffer[i] = arr[i];

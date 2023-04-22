@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QUdpSocket>
 #include <QTimer>
+#include <QThread>
+#include <QTime>
 #include <QHostAddress>
 #include <QtGlobal>
 #include <QDebug>
@@ -41,9 +43,10 @@ public:
     int initSeqNo = 1;          //起始PDU序号
     int timeOut = 1000;         //超时定时器时长
     QByteArray receiveBuffer;   //文件接收缓冲区
+    QByteArray loadBuf;         //装载进缓冲区的媒介
     char** sendBuf;             //发送缓冲区
-    long long* buftoNo;       //sendBuf中对应的帧序号
-    int* buflen;                 //sendBuf对应长度
+    long long* buftoNo;         //sendBuf中对应的帧序号
+    int* buflen;                //sendBuf对应长度
     bool isSending = 0;         //记录此刻是不是在发文件
     bool isReceiveing = 0;      //记录此刻是不是在收文件
     int noAnsCount;             //记录连续有多少起无回应，超过十次认为信道失效
@@ -64,6 +67,7 @@ public:
     //接收文件相关
     QFile receiveFile;
     QString receiveFileName;
+    QString receivePath;
     long long receiveFileSize;
     long long receivedSize;
     long long expectReceive = -1;         //发送完文件需要多少帧

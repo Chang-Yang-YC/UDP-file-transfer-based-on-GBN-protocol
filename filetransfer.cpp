@@ -30,6 +30,7 @@ fileTransfer::~fileTransfer()
 void fileTransfer::on_receiveSocket_readyRead()
 {
     receiveBuffer.clear();
+    receiveBuffer.resize(dataSize + 50);
     while(receiveSocket->hasPendingDatagrams())
     {
     receiveBuffer.clear();
@@ -47,12 +48,14 @@ void fileTransfer::on_receiveSocket_readyRead()
         if(check_CCITT(receiveBuffer.data(),receiveBuffer.size()))
         {
             //此时正确性校验不通过
-            qDebug() << "crc check failed!";
+            //qDebug() << "crc check failed!";
+            ui->textEdit->append("crc check failed!");
             return;
         }
         else
         {
-            qDebug() << "crc check pass.";
+            //qDebug() << "crc check pass.";
+            ui->textEdit->append("crc check pass.");
             //将接收数据拆解为帧形式
             sendip = ClientAddr.toString();
             sendUDPPort = (int)port;
@@ -65,9 +68,10 @@ void fileTransfer::on_receiveSocket_readyRead()
 
 void fileTransfer::analyseReceive()
 {
+    ui->textEdit->append("****** after analyse ********");
 
     statusLabel->setText(QString("receive frame: %1").arg(receiveUDPFrame->frame_expected));
-    ui->statusbar->addWidget(statusLabel);
+    //ui->statusbar->addWidget(statusLabel);
     if(receiveUDPFrame->frame_expected == 0)    //收到文件头消息，本地身份新增接收者
     {
         QString fileInfo(receiveUDPFrame->arrSend);
@@ -75,25 +79,45 @@ void fileTransfer::analyseReceive()
         receiveFileSize = fileInfo.section("##",1,1).toLongLong();
         expectReceive = fileInfo.section("##",2,2).toLongLong();
         //关联文件名字
-        receiveFile.setFileName(receiveFileName);
+
+        receivePath = "./port" + QString::number(thisUDPPort) + "receive";
+        QDir save;
+        if(!save.exists(receivePath))   save.mkdir(receivePath);
+        receivePath += "/" + receiveFileName;
+        ui->textEdit->append(receivePath);
+        receiveFile.setFileName(receivePath);
 
         //只写方式方式，打开文件
         bool isOk = receiveFile.open(QIODevice::WriteOnly);
         if(isOk == true)
         {
+            ui->textEdit->append("open successful");
             qDebug() << "open file successful";
             statusLabel->setText("文件正在接收");
             ui->statusbar->addWidget(statusLabel);
             isReceiveing = true;
             receivedSize = 0;
             recefraNo = 0;
-            if(timerSend.isActive() == false)       timerSend.start(20);
+            if(timerSend.isActive() == false)
+            {
+                sendUDPFrame->init();
+                sendUDPFrame->setHead(1,-1,0);
+                sendUDPFrame->framing();
+                sendSocket->writeDatagram(sendUDPFrame->arrSend.data(),sendUDPFrame->totalLen,QHostAddress(sendip),sendUDPPort);
+                timerSend.start(20);
+            }
+        }
+        else{
+            ui->textEdit->append("open fail");
+            statusLabel->setText("文件建立失败");
+            ui->statusbar->addWidget(statusLabel);
         }
     }
     else if(isReceiveing == true)   //自己是接收者，需要接收文件帧信息和数据
     {
         if(recefraNo + 1 == receiveUDPFrame->frame_expected) //接收端单窗口
         {
+            ui->textEdit->append("this is the frame");
             int writelen = receiveFile.write(receiveUDPFrame->arrSend,receiveUDPFrame->totalLen);
             if(writelen > 0)
             {
@@ -101,12 +125,13 @@ void fileTransfer::analyseReceive()
                 receivedSize += writelen;
             }
         }
-        if(recefraNo == expectReceive)  //接收完成
+        if(receivedSize == receiveFileSize)  //接收完成
         {
             receiveFile.close(); //关闭文件
             //断开连接
             receiveSocket->disconnectFromHost();
             receiveSocket->bind(QHostAddress(thisip),thisUDPPort);
+            isReceiveing = false;
             statusLabel->setText("文件接收完成");
             ui->statusbar->addWidget(statusLabel);
         }
@@ -116,7 +141,6 @@ void fileTransfer::analyseReceive()
         ackfraNo = receiveUDPFrame->ack_expected;
     }
 
-    ui->textEdit->append("****** after analyse ********");
     ui->textEdit->append(QString("expect fra no = %1").arg(recefraNo));
     ui->textEdit->append(QString("real   fra no = %1").arg(receiveUDPFrame->frame_expected));
     ui->textEdit->append(QString("receive ack   = %1").arg(receiveUDPFrame->ack_expected));
@@ -133,15 +157,20 @@ void fileTransfer::on_pushButton1Send_clicked()
     frameNo = 1;
     ackfraNo = -1;
 
-    //QString head = fileName + QString("##%1##%2").arg(fileSize).arg(expectNo);
     QString head = fileName + "##" + QString::number(fileSize,10)+"##"+QString::number(expectNo,10);
     sendip = ui->lineEditIP->text();
     sendUDPPort = ui->lineEditPort->text().toUShort();
-    //sendSocket->writeDatagram(head.toLocal8Bit().data(),head.size(),QHostAddress(sendip),sendUDPPort);
     sendUDPFrame->setHead(0,0,0);
     sendUDPFrame->setBuffer(head.toLocal8Bit());
     sendUDPFrame->framing();
     sendSocket->writeDatagram(sendUDPFrame->arrSend.data(),sendUDPFrame->totalLen,QHostAddress(sendip),sendUDPPort);
+
+    QTime delay = QTime::currentTime().addMSecs(20);
+    while(QTime::currentTime()<delay)
+    {
+        QCoreApplication::processEvents(QEventLoop::AllEvents,5);
+        QThread::msleep(5);
+    }
 
     ui->textEdit->append("****** after sending ********");
     ui->textEdit->append("last send  No = " + QString::number(frameNo));
@@ -159,14 +188,16 @@ void fileTransfer::on_pushButton1Send_clicked()
     if(timerTimeOut.isActive() == false)    timerTimeOut.start(timeOut);
     if(timerSend.isActive() == false)       timerSend.start(20);
 
-    sendBuf = (char**)malloc(swSize*sizeof(char*));
+    sendBuf = new char*[swSize];
     for(int i = 0;i < swSize;i++)
     {
-        sendBuf[i] = (char*)malloc(dataSize*sizeof(char));
+        sendBuf[i] = new char[dataSize];
     }
     buftoNo = (long long*)malloc(swSize*sizeof(long long));
     buflen = (int*)malloc(swSize*sizeof(int));
+    loadBuf.resize(dataSize);
     isSending = true;
+    sendSize = 0;
 }
 
 void fileTransfer::timerSend_triggered()
@@ -181,12 +212,12 @@ void fileTransfer::timerSend_triggered()
         sendUDPFrame->ack_expected = recefraNo;
         sendUDPFrame->next_frame_to_send = recefraNo + 1;
     }
-    if(isSending == true && ackfraNo == expectNo)
+    if(isSending == true && fileSize == sendSize)
     {
         isSending = false;
     }
                     //当前是发送者，需要发送帧序号和数据
-    else if(isSending == true && frameNo - ackfraNo <= swSize && frameNo <= expectNo)    //在窗口内，装载数据
+    else if(isSending == true && frameNo - ackfraNo <= swSize && fileSize > sendSize)    //在窗口内，装载数据
     {
         noAnsCount = 0;
         sendUDPFrame->frame_expected = frameNo;
@@ -194,17 +225,19 @@ void fileTransfer::timerSend_triggered()
         {
             buftoNo[frameNo % swSize] = frameNo;
             buflen[frameNo % swSize] = file.read(sendBuf[frameNo % swSize],dataSize);
+            //buflen[frameNo % swSize] = file.read(loadBuf.data(),dataSize);
+            sendSize += buflen[frameNo % swSize];
         }
 
         //装载完数据进帧
-        QByteArray temp;
-        temp.resize(buflen[frameNo % swSize]);
-        for(int i = 0;i < buflen[frameNo % swSize];i++) temp[i] = sendBuf[frameNo % swSize][i];
-        sendUDPFrame->setBuffer(temp);
+        //QByteArray temp;
+        loadBuf.resize(buflen[frameNo % swSize]);
+        for(int i = 0;i < buflen[frameNo % swSize];i++) loadBuf[i] = sendBuf[frameNo % swSize][i];
+        sendUDPFrame->setBuffer(loadBuf);
         //sendUDPFrame->setBuffer(sendBuf[frameNo % swSize],buflen[frameNo % swSize]);
         frameNo++;
     }
-    else if(isSending == true && frameNo <= expectNo)
+    else if(isSending == true && fileSize > sendSize)
     {
         //noAnsCount++;
         //sendUDPFrame->frame_expected = frameNo;
@@ -215,11 +248,12 @@ void fileTransfer::timerSend_triggered()
     sendUDPFrame->framing();
 
     ui->textEdit->append("****** after sending ********");
+    ui->textEdit->append("read len = " + QString::number(loadBuf.size()));
     ui->textEdit->append("last send  No = " + QString::number(frameNo));
     ui->textEdit->append("last      ack = " + QString::number(ackfraNo));
-    debugarray = QString("real send  No = %1").arg(receiveUDPFrame->frame_expected).toLocal8Bit();
+    debugarray = QString("real send  No = %1").arg(sendUDPFrame->frame_expected).toLocal8Bit();
     ui->textEdit->append(debugarray);
-    debugarray = QString("real send ack = %1").arg(receiveUDPFrame->ack_expected).toLocal8Bit();
+    debugarray = QString("real send ack = %1").arg(sendUDPFrame->ack_expected).toLocal8Bit();
     ui->textEdit->append(debugarray);
     debugarray = sendUDPFrame->arrSend;
     ui->textEdit->append(debugarray);
