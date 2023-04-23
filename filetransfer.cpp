@@ -7,12 +7,14 @@ fileTransfer::fileTransfer(QWidget *parent)
 {
     ui->setupUi(this);
 
+    startTime = new QTime();
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));  //随机种子
     sendSocket = new QUdpSocket(this);
     receiveSocket = new QUdpSocket(this);
     //绑定接收端口
     receiveSocket->bind(QHostAddress(thisip),thisUDPPort);
     ui->pushButton1Send->setEnabled(false);
+    ui->pushButton1SaveLog->setEnabled(false);
 
     sendUDPFrame = new UDPFrame();
     receiveUDPFrame = new UDPFrame();
@@ -57,7 +59,6 @@ fileTransfer::fileTransfer(QWidget *parent)
     tableItemCheckNoErr->setText("帧序错误");
     tableItemCheckNoErr->setBackgroundColor(Qt::yellow);
 
-
     table2 = ui->tableWidget2;
     table2->setColumnCount(6);
     table2->setRowCount(1);
@@ -65,6 +66,15 @@ fileTransfer::fileTransfer(QWidget *parent)
     table2List << tr("帧序号") << tr("时间戳") << tr("帧类型") << tr("校验") << tr("ack帧") << tr("已接收");
     table2->setHorizontalHeaderLabels(table2List);
     table2->setEditTriggers(QAbstractItemView::NoEditTriggers);   //表格不可编辑
+
+    logTable = ui->tableWidget3;
+    logTable->setColumnCount(9);
+    logTable->setRowCount(1);
+    QStringList table3List;
+    table3List << tr("文件大小") << tr("窗口大小") << tr("错误率") << tr("丢失率") << tr("超时时长/ms") << tr("UDP帧数")
+               << tr("超时次数") << tr("发送时长/ms") << tr("平均速率/kb-s");
+    logTable->setHorizontalHeaderLabels(table3List);
+    logTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     connect(myPrefer,SIGNAL(send_Back_Param(QString)),this,SLOT(slotGetParam(QString)));
     connect(&timerSend,&QTimer::timeout,[=](){timerSend_triggered();});
@@ -251,6 +261,7 @@ void fileTransfer::on_pushButton1Send_clicked()
     sendUDPFrame->framing();
     sendSocket->writeDatagram(sendUDPFrame->arrSend.data(),sendUDPFrame->totalLen,QHostAddress(sendip),sendUDPPort);
 
+    startTime->start();
     QTime delay = QTime::currentTime().addMSecs(20);
     while(QTime::currentTime()<delay)
     {
@@ -310,6 +321,10 @@ void fileTransfer::timerSend_triggered()
     }
     if(isSending == true && fileSize == sendSize)
     {
+        runtime += startTime->restart();
+        statusLabel->setText(QString("发送时长: %1s").arg(runtime / 1000));
+        if(isSending)   ui->statusbar->addWidget(statusLabel);
+        ui->pushButton1SaveLog->setEnabled(true);
         isSending = false;
         while(ackrow < row)
         {
@@ -390,6 +405,11 @@ void fileTransfer::timerSend_triggered()
     row++;
     table1->insertRow(row);
     table1->scrollToBottom();
+    runtime += startTime->restart();
+    sendSpeed = 1.024 * sendSize / runtime;
+    statusLabel->setText(QString("平均发送速率: %1kb/s").arg(sendSpeed));
+    if(isSending)   ui->statusbar->addWidget(statusLabel);
+    if(sendSpeed > maxSpeed)    maxSpeed = sendSpeed;
 
     if(isFrameMistake())    sendUDPFrame->totalLen = 10;
 
@@ -412,6 +432,7 @@ void fileTransfer::timeOutCheck()
             ackrow++;
         }
         timeOutCount++;
+        TimeOutTotall++;
         frameNo = ackfraNo + 1;
         if(timeOutCount > 8)
         {
@@ -499,17 +520,89 @@ void fileTransfer::on_pushButton1OpenFile_clicked()
 
 void fileTransfer::on_pushButton1SaveLog_clicked()
 {
+    logPath = "./LOG";
+    QDir save;
+    if(!save.exists(logPath))   save.mkdir(logPath);
+    logPath += "/SEND-" + fileName + myTime->currentTime().toString("-hh-mm-ss") + ".txt";
+    logFile.setFileName(logPath);
+    if(!logFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        statusLabel->setText("日志保存失败");
+        ui->statusbar->addWidget(statusLabel);
+        return;
+    }
+    QTextStream wrin(&logFile);
+    wrin << "filesize##" << fileSize;
+    wrin << "##swsize##" << swSize;
+    wrin << "##errRate##" << errRate;
+    wrin << "##lostRate##" << lostRate;
+    wrin << "##timeOut##" << timeOut;
+    wrin << "##$$" << endl;
 
+    wrin << "UDPnum##" << row;
+    wrin << "##timeoutCount##" << TimeOutTotall;
+    wrin << "##runtime##" << runtime;
+    wrin << "##speed##" << sendSpeed;
+    wrin << "##$$" << endl;
+
+    for(int i = 0;i < row;i++)
+    {
+        wrin << table1->item(i,0) << "##";
+        wrin << table1->item(i,1) << "##";
+        wrin << table1->item(i,2) << "##";
+        wrin << table1->item(i,3) << "##";
+        wrin << table1->item(i,4) << "##";
+        wrin << table1->item(i,5) << "##";
+        wrin << table1->item(i,6) << "##$$" << endl;
+    }
+    logFile.close();
 
 }
 
-void fileTransfer::on_pushButton2SaveLog_clicked()
-{
-
-}
 
 void fileTransfer::on_pushButton3LoadLog_clicked()
 {
+    QString filePath = QFileDialog::getOpenFileName(this, "open", "./");
+    if(false == filePath.isEmpty()) //如果选择文件路径有效
+    {
+        //logPath.clear();
+        fileSize = 0;
+
+        //只读方式打开文件
+        //指定文件的名字
+        logFile.setFileName(filePath);
+
+        //打开文件
+        bool isOk = logFile.open(QIODevice::ReadOnly);
+        if(false == isOk)
+        {
+            statusLabel->setText("打开日志失败");
+            ui->statusbar->addWidget(statusLabel);
+        }
+        //提示打开文件的路径
+        statusLabel->setText("打开日志成功");
+        ui->statusbar->addWidget(statusLabel);
+        QTextStream read(&logFile);
+        QString line = read.readLine();
+        logTable->setItem(rowlog,0,new QTableWidgetItem(line.section("##",1,1)));
+        logTable->setItem(rowlog,1,new QTableWidgetItem(line.section("##",3,3)));
+        logTable->setItem(rowlog,2,new QTableWidgetItem(line.section("##",5,5)));
+        logTable->setItem(rowlog,3,new QTableWidgetItem(line.section("##",7,7)));
+        logTable->setItem(rowlog,4,new QTableWidgetItem(line.section("##",9,9)));
+        line = read.readLine();
+        logTable->setItem(rowlog,5,new QTableWidgetItem(line.section("##",1,1)));
+        logTable->setItem(rowlog,6,new QTableWidgetItem(line.section("##",3,3)));
+        logTable->setItem(rowlog,7,new QTableWidgetItem(line.section("##",5,5)));
+        logTable->setItem(rowlog,8,new QTableWidgetItem(line.section("##",7,7)));
+        logFile.close();
+        rowlog++;
+        logTable->insertRow(rowlog);
+    }
+    else
+    {
+        statusLabel->setText("无效路径");
+        ui->statusbar->addWidget(statusLabel);
+    }
 
 }
 

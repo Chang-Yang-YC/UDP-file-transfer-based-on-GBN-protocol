@@ -57,6 +57,11 @@ public:
     long long ackfraNo = -1;    //已确认的帧号    !!!发送者维护
     long long recefraNo = -1;   //当前接收帧序号  !!!接收者维护
     long long TimerackNo = -2;       // ！！！超时计时器维护  记录上次确认的帧
+    long long TimeOutTotall = 0;
+    QTime* startTime;
+    int runtime = 0;
+    float sendSpeed;
+    float maxSpeed = 0;
 
     //发送文件相关
     QFile file;       //文件对象
@@ -72,6 +77,13 @@ public:
     long long receiveFileSize;
     long long receivedSize;
     long long expectReceive = -1;         //发送完文件需要多少帧
+
+    //日志保存相关
+    QTableWidget* logTable;
+    int rowlog = 0;
+    QFile logFile;
+    QString logName;
+    QString logPath;
 
     QTime* myTime;
 
