@@ -138,8 +138,6 @@ private slots:
 
     void on_pushButton1Send_clicked();
 
-    void on_pushButton2SaveLog_clicked();
-
     void on_pushButton3LoadLog_clicked();
 
     void on_actionLoadParam_triggered();
